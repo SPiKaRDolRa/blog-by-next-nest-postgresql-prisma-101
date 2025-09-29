@@ -1,0 +1,35 @@
+// prisma schema สำหรับตาราง posts โดยคอมเมนต์ภาษาไทย
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// สร้าง enum สำหรับสถานะบทความ
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// โมเดลโพสต์หลัก
+model Post {
+  id            String     @id @default(uuid())
+  title         String
+  slug          String     @unique
+  excerpt       String?
+  content       String     // อาจเก็บเป็น markdown
+  coverImageUrl String?
+  tags          String[]   // เก็บเป็น array ของข้อความเพื่อความเรียบง่าย
+  status        PostStatus @default(DRAFT)
+  publishedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([publishedAt])
+  @@index([status])
+}

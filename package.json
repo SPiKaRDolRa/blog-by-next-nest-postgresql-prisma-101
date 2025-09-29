@@ -1,0 +1,19 @@
+{
+  "name": "blog-by-next-nest-postgresql-prisma-101",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.12.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -c green,blue \"pnpm -C apps/api start:dev\" \"pnpm -C apps/web dev\"",
+    "build": "pnpm -C apps/api build && pnpm -C apps/web build",
+    "start": "concurrently \"pnpm -C apps/api start:prod\" \"pnpm -C apps/web start\"",
+    "lint": "pnpm -C apps/web lint"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "dotenv-cli": "^7.4.2"
+  }
+}
