@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { PostsModule } from './posts/posts.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   // โมดูลหลักของแอป: โหลดค่าคอนฟิก, Prisma, และ Posts API
@@ -12,6 +13,7 @@ import { PostsModule } from './posts/posts.module';
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     PostsModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

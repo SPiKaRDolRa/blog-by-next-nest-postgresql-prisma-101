@@ -16,6 +16,12 @@ enum PostStatus {
   ARCHIVED
 }
 
+// บทบาทผู้ใช้สำหรับการจัดสิทธิ์เบื้องต้น
+enum Role {
+  USER
+  ADMIN
+}
+
 // โมเดลโพสต์หลัก
 model Post {
   id            String     @id @default(uuid())
@@ -30,6 +36,25 @@ model Post {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
+  // ความสัมพันธ์กับผู้เขียน (ไม่บังคับในตัวอย่าง)
+  authorId      String?
+  author        User?      @relation("UserToPost", fields: [authorId], references: [id])
+
   @@index([publishedAt])
   @@index([status])
+}
+
+// ผู้ใช้ระบบสำหรับการล็อกอินและกำหนดสิทธิ์
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  role          Role     @default(USER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  posts         Post[]   @relation("UserToPost")
+
+  @@index([email])
 }

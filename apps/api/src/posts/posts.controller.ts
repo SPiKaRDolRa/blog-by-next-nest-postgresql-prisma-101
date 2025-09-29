@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { PostsService } from './posts.service';
 import { CreatePostDto, UpdatePostDto } from './dto';
 
@@ -8,6 +9,7 @@ export class PostsController {
 
   // สร้างบทความใหม่ (ในโปรดักชันควรมี guard ป้องกันสิทธิ์)
   @Post()
+  @UseGuards(AuthGuard('jwt'))
   create(@Body() dto: CreatePostDto) {
     return this.posts.create(dto);
   }
@@ -44,12 +46,14 @@ export class PostsController {
 
   // แก้ไขบทความ
   @Patch(':id')
+  @UseGuards(AuthGuard('jwt'))
   update(@Param('id') id: string, @Body() dto: UpdatePostDto) {
     return this.posts.update(id, dto);
   }
 
   // ลบบทความ
   @Delete(':id')
+  @UseGuards(AuthGuard('jwt'))
   remove(@Param('id') id: string) {
     return this.posts.remove(id);
   }
