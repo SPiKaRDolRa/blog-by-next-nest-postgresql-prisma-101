@@ -1,73 +1,87 @@
-﻿# Mini Blog (Next.js + NestJS + Prisma + PostgreSQL)
+﻿# Mini Blog — Next.js + NestJS + Prisma + PostgreSQL (Monorepo)
 
-โปรเจกต์สาธิตฟีเจอร์บล็อกครบ CRUD สำหรับ Portfolio สาย Full‑Stack — โชว์ Next.js SSR/ISR, NestJS API, Prisma/PostgreSQL, SEO, และ CI พร้อมใช้งาน
+โปรเจกต์ Mini Blog สำหรับใช้เป็น Portfolio โชว์สกิล Full‑Stack ตาม JD: โครงสร้างแบบ Monorepo, หน้าเว็บ SSR/ISR, API มาตรฐาน, Prisma ORM, CI พร้อม และคำแนะนำดีพลอยสาธารณะ
 
-## เดโม่ภายในเครื่อง
+## ภาพรวม
+- เว็บ (Next.js App Router) เร็วและพร้อม SEO: SSR รายการบทความ, ISR รายบทความ, JSON‑LD, sitemap, robots
+- API (NestJS) แบบโมดูลชัดเจน, DTO validation, error handling, Prisma schema + migration + seed
+- Database: PostgreSQL (Docker compose dev), สคีมา `Post` ครอบคลุมสถานะ draft/published/archived
+- Revalidate: มี API ฝั่งเว็บสำหรับ on‑demand revalidation (tag/path) หลังการแก้ไขคอนเทนต์
 
-- Web: <http://localhost:3000>
-- API: <http://localhost:4000>
+## โครงสร้างโมโนรีโป
+```
+.
+├─ apps/
+│  ├─ api/              # NestJS API (Prisma, Posts module, Dockerfile)
+│  └─ web/              # Next.js (App Router, SSR/ISR, admin pages)
+├─ docker-compose.yml   # Postgres dev service
+├─ pnpm-workspace.yaml  # กำหนด workspaces
+├─ .github/workflows/ci.yml
+└─ README.md            # ไฟล์นี้
+```
 
-## วิธีเริ่มต้น (dev)
+### สถาปัตยกรรม (ย่อ)
+```mermaid
+flowchart LR
+  A[Next.js Web] -->|HTTP| B[NestJS API]
+  B --> C[Prisma ORM]
+  C --> D[(PostgreSQL)]
+  A --> E[ISR Revalidate API]
+```
 
-1) สตาร์ทฐานข้อมูล
+## ฟีเจอร์หลัก
+- CRUD บทความครบ: เพิ่ม/แก้ไข/ลบ (หน้า admin), อ่านบทความ (public)
+- รายการบทความ (SSR + tag cache)
+- หน้าบทความ (ISR + JSON‑LD) พร้อม revalidate on‑demand เมื่อมีการแก้ไข/เผยแพร่
+- Validation/Errors: ปลอดภัยและสื่อความหมาย
+- CI: ลินต์/บิลด์อัตโนมัติบน GitHub Actions
 
+## วิธีรัน (Dev)
+1) ฐานข้อมูล
 ```bash
 docker compose up -d db
 ```
-
-2) ติดตั้งแพ็กเกจและรัน Prisma
-
+2) ติดตั้งและเตรียมฐานข้อมูล
 ```bash
 pnpm install
 pnpm -C apps/api prisma:migrate
 pnpm -C apps/api prisma:seed
 ```
-
-3) รันเว็บและ API
-
+3) รันแยกสองโปรเซส
 ```bash
-pnpm -C apps/api start:dev
-pnpm -C apps/web dev
+pnpm -C apps/api start:dev   # http://localhost:4000
+pnpm -C apps/web dev         # http://localhost:3000
 ```
 
-## ฟีเจอร์หลัก
+## Endpoints สำคัญ (API)
+- GET `/posts?status=PUBLISHED&take=20&tag=nextjs&q=keyword` — รายการบทความ + ตัวกรองพื้นฐาน
+- GET `/posts/:slug` — รายละเอียดบทความ (ใช้ ISR ฝั่งเว็บ)
+- GET `/posts/id/:id` — ใช้ในหน้าแก้ไข (admin)
+- POST `/posts` — สร้าง (แนะนำให้ป้องกันด้วย guard เมื่อโปรดักชัน)
+- PATCH `/posts/:id` — แก้ไข
+- DELETE `/posts/:id` — ลบ
 
-- เพิ่ม/แก้ไข/ลบบทความ (admin) และอ่านบทความ (public)
-- SSR รายการ, ISR รายบทความ + on‑demand revalidation
-- DTO validation, error handling, Prisma schema ชัดเจน
-- SEO: meta, OG, JSON‑LD, sitemap, robots
-- CI: GitHub Actions (lint/build/test ขั้นพื้นฐาน)
+## Revalidation (ฝั่งเว็บ)
+- POST `/api/revalidate` body: `{ tag?: string, slug?: string }`
+  - `tag: 'posts'` จะ revalidate หน้า Home (รายการ)
+  - `slug` จะ revalidate เส้นทาง `/posts/[slug]`
 
-## โครงสร้างสำคัญ
+## ดีพลอยสาธารณะ (แนะนำ)
+- API (Render)
+  - Root: `apps/api`
+  - Build: `pnpm -C apps/api build`
+  - Start: `pnpm -C apps/api start:prod`
+  - Env: `DATABASE_URL`, `PORT=4000`, `CORS_ORIGINS=https://<your-web>.vercel.app`
+- Web (Vercel)
+  - Root: `apps/web`
+  - Env: `NEXT_PUBLIC_API_BASE=https://<render-api>.onrender.com`, `NEXT_PUBLIC_SITE_BASE=https://<your-web>.vercel.app`
 
-- apps/web: Next.js App Router
-- apps/api: NestJS + Prisma client
-- apps/api/prisma/schema.prisma: โมเดล `Post`
-
-## สคริปต์ทดสอบโหลด
-
-- autocannon (เร็ว ใช้ง่าย)
-
+## ทดสอบประสิทธิภาพ (ตัวอย่าง)
 ```bash
 npx autocannon -c 30 -d 20 http://localhost:4000/posts
 ```
-
-- k6 (ไฟล์ `k6.js`)
-
-```javascript
-import http from 'k6/http';
-import { check, sleep } from 'k6';
-export const options = { vus: 30, duration: '20s' };
-export default function () {
-  const res = http.get('http://localhost:4000/posts');
-  check(res, { 'status 200': r => r.status === 200 });
-  sleep(1);
-}
-```
-
-รัน: `k6 run k6.js`
+หรือ `k6` ดูตัวอย่างโค้ดในส่วน “สคริปต์ทดสอบโหลด” ของ README นี้
 
 ## หมายเหตุ
-
-- ค่าเริ่มต้น API/WEB base อยู่ในโค้ดและ .env (แก้ไขได้ตามสภาพแวดล้อม)
-- โปรดเพิ่ม auth guard หากจะเปิดใช้งานในโปรดักชัน
+- โปรดเพิ่มการพิสูจน์ตัวตน/สิทธิ์ (AuthN/AuthZ) สำหรับใช้งานสาธารณะ
+- สามารถเพิ่ม Logs/Tracing และ Tests เพื่อยกระดับความน่าเชื่อถือได้ตามโจทย์จริง

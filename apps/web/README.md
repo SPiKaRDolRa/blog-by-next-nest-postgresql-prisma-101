@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Web (Next.js App Router)
 
-## Getting Started
+ส่วนติดต่อผู้ใช้ของ Mini Blog สร้างด้วย Next.js (App Router) รองรับ SSR/ISR และ SEO พร้อมหน้าแอดมินสำหรับเพิ่ม/แก้ไข/ลบบทความ
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## โครงสร้าง
+```
+src/app/
+├─ page.tsx                       # หน้า Home — SSR, ติด tag 'posts'
+├─ posts/[slug]/page.tsx          # หน้าโพสต์ (ISR) + JSON‑LD
+├─ admin/posts/new/page.tsx       # เพิ่มบทความ
+├─ admin/posts/[id]/page.tsx      # แก้ไข/ลบ
+├─ api/revalidate/route.ts        # API สำหรับ revalidate tag/path
+├─ sitemap.xml/route.ts           # sitemap เบื้องต้น
+├─ robots.txt/route.ts            # robots.txt
+└─ lib/api.ts                     # helper เรียก API
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## การทำงานหลัก
+- Home ดึงรายการผ่าน SSR และติดแท็ก cache `posts` → เมื่อ CRUD จะเรียก `/api/revalidate` เพื่อรีเฟรชหน้า
+- หน้าโพสต์ใช้ ISR (`export const revalidate = 300`) และฝัง JSON‑LD เพื่อ SEO
+- หน้าแอดมินเรียก API โดยตรง และแจ้ง revalidate หลัง create/update/delete
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ตัวแปรแวดล้อม
+- `NEXT_PUBLIC_API_BASE` — URL ของ API ที่จะเรียก (เช่น Render)
+- `NEXT_PUBLIC_SITE_BASE` — URL เว็บสำหรับสร้างลิงก์ใน JSON‑LD/sitemap
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## การรัน (Dev)
+```bash
+pnpm install
+pnpm dev  # http://localhost:3000
+```
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## ดีพลอย (Vercel)
+- Root โปรเจกต์: `apps/web`
+- ตั้ง Env: `NEXT_PUBLIC_API_BASE`, `NEXT_PUBLIC_SITE_BASE`
+- กำหนดโดเมนเว็บใน `CORS_ORIGINS` ของฝั่ง API เพื่ออนุญาตข้ามโดเมน
