@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import HeaderActions from "./components/HeaderActions";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -25,10 +26,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-[#111]`}>
+        <header className="border-b border-gray-200">
+          <nav className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
+            <a href="/" className="font-semibold tracking-tight">SPiKaR Blog</a>
+            <HeaderActions />
+          </nav>
+        </header>
+        <main className="min-h-[calc(100vh-56px)]">{children}</main>
+        <footer className="border-t border-gray-200 text-xs text-gray-500">
+          <div className="max-w-4xl mx-auto px-6 py-4">© Mini Blog - powered by SPiKaR</div>
+        </footer>
       </body>
     </html>
   );

@@ -17,8 +17,21 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
 }
+
+/* สไตล์เน้นการอ่านแบบ Medium-like */
+.prose {
+  --tw-prose-body: #111827; /* gray-900 */
+  --tw-prose-headings: #111827;
+  --tw-prose-links: #111827;
+}
+.prose h1, .prose h2, .prose h3 {
+  letter-spacing: -0.01em;
+}
+.prose p {
+  line-height: 1.85;
+}
+.prose a:hover { text-decoration: underline; }
 
 @layer utilities {
   .text-balance {

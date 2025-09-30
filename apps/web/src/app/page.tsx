@@ -1,6 +1,7 @@
 // หน้าแรก: แสดงลิสต์บทความแบบ SSR โดยเรียก API จาก NestJS
 import Link from 'next/link';
 import { apiGet } from './lib/api';
+import AuthorAreaButton from './components/AuthorAreaButton';
 
 type Post = {
   id: string;
@@ -18,21 +19,21 @@ async function fetchPosts() {
 export default async function Home() {
   const posts = await fetchPosts();
   return (
-    <main className="max-w-3xl mx-auto p-6 space-y-6">
+    <main className="max-w-4xl mx-auto px-6 py-10 space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">บทความล่าสุด</h1>
-        <Link href="/admin/posts/new" className="text-sm underline">+ เพิ่มบทความ</Link>
+        <h1 className="text-3xl font-bold tracking-tight">บทความล่าสุด</h1>
+        <AuthorAreaButton />
       </div>
-      <ul className="space-y-4">
+      <div className="divide-y divide-gray-200">
         {posts.map((p) => (
-          <li key={p.id} className="border p-4 rounded-md hover:bg-gray-50">
-            <Link href={`/posts/${p.slug}`} className="text-lg font-medium">
+          <article key={p.id} className="py-6">
+            <Link href={`/posts/${p.slug}`} className="text-2xl font-semibold hover:underline">
               {p.title}
             </Link>
-            {p.excerpt ? <p className="text-sm text-gray-600 mt-1">{p.excerpt}</p> : null}
-          </li>
+            {p.excerpt ? <p className="text-base text-gray-600 mt-1 max-w-2xl">{p.excerpt}</p> : null}
+          </article>
         ))}
-      </ul>
+      </div>
     </main>
   );
 }

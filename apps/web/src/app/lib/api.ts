@@ -1,6 +1,17 @@
 // ไลบรารีเรียก API จากฝั่ง Next.js — คอมเมนต์ภาษาไทย
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:4000';
 
+// ดึง token จาก localStorage (เฉพาะฝั่ง client)
+export function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('token');
+}
+
+// ตรวจสอบสถานะเข้าสู่ระบบ
+export function isLoggedIn(): boolean {
+  return !!getToken();
+}
+
 export async function apiGet<T>(path: string, init?: RequestInit & { next?: { revalidate?: number; tags?: string[] } }): Promise<T> {
   // รองรับการกำหนด revalidate และ tags สำหรับ ISR/Tag revalidation
   const res = await fetch(`${API_BASE}${path}`, { next: { revalidate: 60, ...(init?.next ?? {}) }, ...init });

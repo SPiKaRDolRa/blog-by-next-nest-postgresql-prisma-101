@@ -1,7 +1,7 @@
 // หน้าแก้ไข/ลบบทความ — คอมเมนต์ภาษาไทยทั้งหมด
 'use client';
 import { useEffect, useState } from 'react';
-import { apiGet, apiJson } from '@/app/lib/api';
+import { apiGet, apiJson, isLoggedIn } from '@/app/lib/api';
 import { useRouter, useParams } from 'next/navigation';
 
 type Post = { id: string; title: string; slug: string; excerpt?: string | null; content: string };
@@ -15,6 +15,11 @@ export default function EditPostPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // ไม่ได้ล็อกอิน ให้ไปหน้า login
+    if (!isLoggedIn()) {
+      router.replace('/admin/login');
+      return;
+    }
     (async () => {
       try {
         const data = await apiGet<Post>(`/posts/id/${id}`);
@@ -31,6 +36,11 @@ export default function EditPostPage() {
     setSaving(true);
     setError(null);
     try {
+      if (!isLoggedIn()) {
+        setError('โปรดเข้าสู่ระบบก่อนแก้ไขบทความ');
+        setSaving(false);
+        return;
+      }
       await apiJson(`/posts/${post.id}`, 'PATCH', {
         title: post.title,
         slug: post.slug,
@@ -58,6 +68,11 @@ export default function EditPostPage() {
     setSaving(true);
     setError(null);
     try {
+      if (!isLoggedIn()) {
+        setError('โปรดเข้าสู่ระบบก่อนลบบทความ');
+        setSaving(false);
+        return;
+      }
       await apiJson(`/posts/${post.id}`, 'DELETE');
       await fetch('/api/revalidate', {
         method: 'POST',
@@ -76,17 +91,17 @@ export default function EditPostPage() {
   if (!post) return <main className="max-w-2xl mx-auto p-6">กำลังโหลด...</main>;
 
   return (
-    <main className="max-w-2xl mx-auto p-6 space-y-4">
-      <h1 className="text-xl font-semibold">แก้ไขบทความ</h1>
-      <form onSubmit={onSave} className="space-y-3">
-        <input className="w-full border p-2 rounded" placeholder="หัวข้อ" value={post.title} onChange={(e) => setPost({ ...post, title: e.target.value })} />
-        <input className="w-full border p-2 rounded" placeholder="slug" value={post.slug} onChange={(e) => setPost({ ...post, slug: e.target.value })} />
-        <input className="w-full border p-2 rounded" placeholder="excerpt" value={post.excerpt ?? ''} onChange={(e) => setPost({ ...post, excerpt: e.target.value })} />
-        <textarea className="w-full border p-2 rounded h-48" placeholder="เนื้อหา" value={post.content} onChange={(e) => setPost({ ...post, content: e.target.value })} />
+    <main className="max-w-3xl mx-auto px-6 py-10 space-y-5">
+      <h1 className="text-2xl font-semibold tracking-tight">แก้ไขบทความ</h1>
+      <form onSubmit={onSave} className="space-y-4">
+        <input className="w-full border border-gray-300 p-3 rounded" placeholder="หัวข้อ" value={post.title} onChange={(e) => setPost({ ...post, title: e.target.value })} />
+        <input className="w-full border border-gray-300 p-3 rounded" placeholder="slug" value={post.slug} onChange={(e) => setPost({ ...post, slug: e.target.value })} />
+        <input className="w-full border border-gray-300 p-3 rounded" placeholder="excerpt" value={post.excerpt ?? ''} onChange={(e) => setPost({ ...post, excerpt: e.target.value })} />
+        <textarea className="w-full border border-gray-300 p-3 rounded h-64" placeholder="เนื้อหา" value={post.content} onChange={(e) => setPost({ ...post, content: e.target.value })} />
         {error ? <p className="text-red-600 text-sm">{error}</p> : null}
         <div className="flex gap-2">
-          <button disabled={saving} className="bg-black text-white px-4 py-2 rounded disabled:opacity-50">{saving ? 'กำลังบันทึก...' : 'บันทึก'}</button>
-          <button type="button" onClick={onDelete} className="bg-red-600 text-white px-4 py-2 rounded disabled:opacity-50">ลบ</button>
+          <button disabled={saving} className="bg-[#1a8917] text-white px-5 py-2 rounded disabled:opacity-50">{saving ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+          <button type="button" onClick={onDelete} className="bg-red-600 text-white px-5 py-2 rounded disabled:opacity-50">ลบ</button>
         </div>
       </form>
     </main>

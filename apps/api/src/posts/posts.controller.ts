@@ -32,6 +32,24 @@ export class PostsController {
     });
   }
 
+  // รายการบทความสำหรับผู้ดูแล (ดูได้ทุกสถานะ) — ต้องล็อกอิน
+  @Get('admin')
+  @UseGuards(AuthGuard('jwt'))
+  adminList(
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+    @Query('tag') tag?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.posts.findMany({
+      skip: skip ? Number(skip) : undefined,
+      take: take ? Number(take) : undefined,
+      tag,
+      q,
+      // ไม่ระบุ status เพื่อดึงทุกสถานะ
+    });
+  }
+
   // อ่านบทความเดี่ยวด้วย slug (ใช้ในหน้า ISR)
   @Get(':slug')
   detail(@Param('slug') slug: string) {

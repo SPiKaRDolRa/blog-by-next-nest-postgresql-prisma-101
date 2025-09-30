@@ -1,26 +1,29 @@
 ﻿# Mini Blog — Next.js + NestJS + Prisma + PostgreSQL (Monorepo)
 
-โปรเจกต์ Mini Blog สำหรับใช้เป็น Portfolio โชว์สกิล Full‑Stack ตาม JD: โครงสร้างแบบ Monorepo, หน้าเว็บ SSR/ISR, API มาตรฐาน, Prisma ORM, CI พร้อม และคำแนะนำดีพลอยสาธารณะ
+ระบบ Mini Blog แยก Web/API ชัดเจนในรูปแบบ Monorepo รองรับการอ่านบทความสาธารณะ (SSR/ISR) และพื้นที่ผู้เขียนสำหรับสร้าง/แก้ไข/ลบ (JWT)
 
-## ภาพรวม
-- เว็บ (Next.js App Router) เร็วและพร้อม SEO: SSR รายการบทความ, ISR รายบทความ, JSON‑LD, sitemap, robots
-- API (NestJS) แบบโมดูลชัดเจน, DTO validation, error handling, Prisma schema + migration + seed
-- Database: PostgreSQL (Docker compose dev), สคีมา `Post` ครอบคลุมสถานะ draft/published/archived
-- Revalidate: มี API ฝั่งเว็บสำหรับ on‑demand revalidation (tag/path) หลังการแก้ไขคอนเทนต์
+## ภาพรวมและวัตถุประสงค์
+
+- Web (Next.js App Router): หน้ารายการบทความ (SSR), หน้าบทความ (ISR + JSON‑LD), sitemap/robots, พื้นที่ผู้เขียนและแบบฟอร์มบริหารบทความ
+- API (NestJS): โมดูล Auth/Posts/Prisma, DTO validation, error handling, LoggingInterceptor, JWT guard, Prisma schema/migration/seed
+- Database: PostgreSQL (docker compose สำหรับ dev)
+- Revalidation: API ฝั่ง Web สำหรับสั่ง revalidate ทั้ง tag และ path หลัง CRUD
 
 ## โครงสร้างโมโนรีโป
+
 ```
 .
 ├─ apps/
 │  ├─ api/              # NestJS API (Prisma, Posts module, Dockerfile)
 │  └─ web/              # Next.js (App Router, SSR/ISR, admin pages)
 ├─ docker-compose.yml   # Postgres dev service
-├─ pnpm-workspace.yaml  # กำหนด workspaces
+├─ pnpm-workspace.yaml  # workspaces
 ├─ .github/workflows/ci.yml
-└─ README.md            # ไฟล์นี้
+└─ README.md
 ```
 
 ### สถาปัตยกรรม (ย่อ)
+
 ```mermaid
 flowchart LR
   A[Next.js Web] -->|HTTP| B[NestJS API]
@@ -29,59 +32,68 @@ flowchart LR
   A --> E[ISR Revalidate API]
 ```
 
+## การออกแบบข้อมูลและการทำงาน
+
+- Prisma models:
+  - `User { id, email(unique), passwordHash, name, role(ADMIN|USER), createdAt, updatedAt }`
+  - `Post { id, title, slug(unique), excerpt?, content, tags[], status(DRAFT|PUBLISHED|ARCHIVED), publishedAt?, authorId?, createdAt, updatedAt }`
+- สิทธิ์การเข้าถึง:
+  - อ่าน (GET): public
+  - แก้ไข (POST/PATCH/DELETE): ต้องมี JWT (AuthGuard)
+- กลยุทธ์แคช/SEO:
+  - Home: SSR + tag `posts`
+  - รายบทความ: ISR (`revalidate = 300`) + JSON‑LD + OG
+  - on‑demand revalidate ที่ `POST /api/revalidate`
+
 ## ฟีเจอร์หลัก
-- CRUD บทความครบ: เพิ่ม/แก้ไข/ลบ (หน้า admin), อ่านบทความ (public)
-- รายการบทความ (SSR + tag cache)
-- หน้าบทความ (ISR + JSON‑LD) พร้อม revalidate on‑demand เมื่อมีการแก้ไข/เผยแพร่
-- Validation/Errors: ปลอดภัยและสื่อความหมาย
+
+- อ่านบทความ (public)
+- พื้นที่ผู้เขียน: login (JWT), สร้าง/แก้ไข/ลบ พร้อม revalidate
+- API คุณภาพ: DTO validation, error handling, logging
 - CI: ลินต์/บิลด์อัตโนมัติบน GitHub Actions
 
 ## วิธีรัน (Dev)
-1) ฐานข้อมูล
+
+1) เริ่มฐานข้อมูล
+
 ```bash
 docker compose up -d db
 ```
+
 2) ติดตั้งและเตรียมฐานข้อมูล
+
 ```bash
 pnpm install
 pnpm -C apps/api prisma:migrate
 pnpm -C apps/api prisma:seed
 ```
-3) รันแยกสองโปรเซส
+
+3) รันเว็บและ API
+
 ```bash
 pnpm -C apps/api start:dev   # http://localhost:4000
 pnpm -C apps/web dev         # http://localhost:3000
 ```
 
-## Endpoints สำคัญ (API)
-- GET `/posts?status=PUBLISHED&take=20&tag=nextjs&q=keyword` — รายการบทความ + ตัวกรองพื้นฐาน
-- GET `/posts/:slug` — รายละเอียดบทความ (ใช้ ISR ฝั่งเว็บ)
-- GET `/posts/id/:id` — ใช้ในหน้าแก้ไข (admin)
-- POST `/posts` — สร้าง (แนะนำให้ป้องกันด้วย guard เมื่อโปรดักชัน)
-- PATCH `/posts/:id` — แก้ไข
-- DELETE `/posts/:id` — ลบ
+## Endpoints (คัดมาเฉพาะสำคัญ)
 
-## Revalidation (ฝั่งเว็บ)
+- GET `/posts?status=PUBLISHED&take=20&tag=nextjs&q=keyword`
+- GET `/posts/:slug`
+- GET `/posts/id/:id`
+- GET `/posts/admin` (request login / JWT)
+- POST `/posts` (request login / JWT)
+- PATCH `/posts/:id` (request login / JWT)
+- DELETE `/posts/:id` (request login / JWT)
+
+## Revalidation (Web)
+
 - POST `/api/revalidate` body: `{ tag?: string, slug?: string }`
-  - `tag: 'posts'` จะ revalidate หน้า Home (รายการ)
-  - `slug` จะ revalidate เส้นทาง `/posts/[slug]`
 
-## ดีพลอยสาธารณะ (แนะนำ)
-- API (Render)
+## ดีพลอยสาธารณะ (ย่อ)
+
+- API (เช่น Render)
   - Root: `apps/api`
   - Build: `pnpm -C apps/api build`
   - Start: `pnpm -C apps/api start:prod`
-  - Env: `DATABASE_URL`, `PORT=4000`, `CORS_ORIGINS=https://<your-web>.vercel.app`
 - Web (Vercel)
   - Root: `apps/web`
-  - Env: `NEXT_PUBLIC_API_BASE=https://<render-api>.onrender.com`, `NEXT_PUBLIC_SITE_BASE=https://<your-web>.vercel.app`
-
-## ทดสอบประสิทธิภาพ (ตัวอย่าง)
-```bash
-npx autocannon -c 30 -d 20 http://localhost:4000/posts
-```
-หรือ `k6` ดูตัวอย่างโค้ดในส่วน “สคริปต์ทดสอบโหลด” ของ README นี้
-
-## หมายเหตุ
-- โปรดเพิ่มการพิสูจน์ตัวตน/สิทธิ์ (AuthN/AuthZ) สำหรับใช้งานสาธารณะ
-- สามารถเพิ่ม Logs/Tracing และ Tests เพื่อยกระดับความน่าเชื่อถือได้ตามโจทย์จริง

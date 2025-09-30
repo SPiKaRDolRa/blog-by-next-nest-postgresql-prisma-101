@@ -1,40 +1,42 @@
 # API (NestJS + Prisma)
 
-บริการ API สำหรับ Mini Blog โครงสร้างแบบโมดูล ชัดเจน อ่านง่าย พร้อม Prisma ORM และสคริปต์ seed
+บริการ API สำหรับ Mini Blog โครงสร้างแบบโมดูล ชัดเจน พร้อม Prisma ORM และสคริปต์ seed
 
 ## โครงสร้าง
+
 ```
 src/
+├─ auth/                     # JWT auth (controller/service/strategy)
 ├─ posts/                    # โมดูลบทความ (controller/service/dto)
-│  ├─ posts.controller.ts
-│  ├─ posts.service.ts
-│  └─ dto/
-├─ prisma/                   # Prisma service เป็น Global module
-│  ├─ prisma.module.ts
-│  └─ prisma.service.ts
+├─ prisma/                   # Prisma service (Global)
+├─ common/logging.interceptor.ts
 ├─ app.module.ts
-└─ main.ts                   # bootstrap, ValidationPipe, CORS
+└─ main.ts                   # bootstrap, ValidationPipe, CORS, Interceptor
 
 prisma/
-├─ schema.prisma             # โมเดล Post + enum PostStatus
-└─ migrations/               # ไฟล์ migration
+├─ schema.prisma             # User/Post/enum ต่าง ๆ
+└─ migrations/               # migration files
 ```
 
-## โมเดลข้อมูล (ย่อ)
-- `Post { id, title, slug(unique), excerpt?, content, tags[], status, publishedAt?, createdAt, updatedAt }`
-- ดัชนี: `publishedAt`, `status` เพื่อการคัดกรอง/เรียงลำดับที่เร็วขึ้น
+## ข้อมูลและสิทธิ์
 
-## Endpoint หลัก
-- GET `/posts` — ตัวกรอง: `status`, `tag`, `q`, แบ่งหน้า: `skip`, `take`
-- GET `/posts/:slug` — รายละเอียดสำหรับหน้า public (ISR ฝั่งเว็บ)
-- GET `/posts/id/:id` — ใช้ในหน้าแก้ไข (admin)
-- POST `/posts` — สร้างบทความ
-- PATCH `/posts/:id` — แก้ไขบทความ
-- DELETE `/posts/:id` — ลบบทความ
+- `User { id, email, passwordHash, name, role }`
+- `Post { id, title, slug, excerpt?, content, tags[], status, publishedAt?, authorId? }`
+- อ่าน (GET) เป็น public, แก้ไข (POST/PATCH/DELETE) ต้อง JWT
 
-หมายเหตุ: ในโปรดักชันควรเพิ่ม Guard/Interceptors/Rate limit ตามมาตรฐานความปลอดภัย
+## Endpoints หลัก
+
+- GET `/posts` — ตัวกรอง: `status`, `tag`, `q` และ `skip/take`
+- GET `/posts/:slug`
+- GET `/posts/id/:id`
+- GET `/posts/admin` (ต้อง JWT)
+- POST `/posts` (ต้อง JWT)
+- PATCH `/posts/:id` (ต้อง JWT)
+- DELETE `/posts/:id` (ต้อง JWT)
+- POST `/auth/login` — รับ `{ email, password }` คืน `accessToken`
 
 ## การรัน (Dev)
+
 ```bash
 pnpm install
 pnpm prisma:migrate
@@ -42,11 +44,9 @@ pnpm prisma:seed
 pnpm start:dev  # http://localhost:4000
 ```
 
-## ตัวแปรแวดล้อมสำคัญ
-- `DATABASE_URL` — URL ของ PostgreSQL
-- `PORT` — พอร์ตของ API (ดีฟอลต์ 4000)
-- `CORS_ORIGINS` — รายการโดเมนที่อนุญาต (คั่นด้วย comma). ถ้าไม่ตั้ง จะอนุญาตทั้งหมด (สะดวกสำหรับเดโม)
+## ตัวแปรแวดล้อม
 
-## ดีพลอย
-- Render: Root `apps/api`, Build `pnpm -C apps/api build`, Start `pnpm -C apps/api start:prod`
-- มี `Dockerfile` สำหรับ build เป็นอิมเมจโดยตรง
+- `DATABASE_URL` — เชื่อมต่อ PostgreSQL
+- `PORT` — พอร์ตของ API (ดีฟอลต์ 4000)
+- `CORS_ORIGINS` — รายการ origin ที่อนุญาต (คั่นด้วย comma)
+- `JWT_SECRET` — คีย์สำหรับลงนาม JWT
